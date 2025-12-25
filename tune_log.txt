@@ -1,0 +1,158 @@
+Rows: 5
+Columns: 2
+$ mtry  [3m[38;5;246m<int>[39m[23m …
+$ min_n [3m[38;5;246m<int>[39m[23m …
+══ Workflow ════════════════════════════════════════════════════════════════════════
+Preprocessor: Recipe
+Model: rand_forest()
+
+── Preprocessor ────────────────────────────────────────────────────────────────────
+5 Recipe Steps
+
+• step_zv()
+• step_corr()
+• step_YeoJohnson()
+• step_normalize()
+• step_dummy()
+
+── Model ───────────────────────────────────────────────────────────────────────────
+Random Forest Model Specification (regression)
+
+Main Arguments:
+  mtry = tune()
+  trees = 500
+  min_n = tune()
+
+Engine-Specific Arguments:
+  importance = impurity
+
+Computational engine: ranger 
+
+    user   system  elapsed 
+29849.21   257.39 29941.37 
+Rows: 5
+Columns: 2
+$ mtry  <int> …
+$ min_n <int> …
+══ Workflow ════════════════════════════════════════════════════════════════════
+Preprocessor: Recipe
+Model: rand_forest()
+
+── Preprocessor ────────────────────────────────────────────────────────────────
+5 Recipe Steps
+
+• step_zv()
+• step_corr()
+• step_YeoJohnson()
+• step_normalize()
+• step_dummy()
+
+── Model ───────────────────────────────────────────────────────────────────────
+Random Forest Model Specification (regression)
+
+Main Arguments:
+  mtry = tune()
+  trees = 500
+  min_n = tune()
+
+Engine-Specific Arguments:
+  importance = impurity
+
+Computational engine: ranger 
+
+Rows: 5
+Columns: 2
+$ mtry  <int> …
+$ min_n <int> …
+══ Workflow ════════════════════════════════════════════════════════════════════
+Preprocessor: Recipe
+Model: rand_forest()
+
+── Preprocessor ────────────────────────────────────────────────────────────────
+5 Recipe Steps
+
+• step_zv()
+• step_corr()
+• step_YeoJohnson()
+• step_normalize()
+• step_dummy()
+
+── Model ───────────────────────────────────────────────────────────────────────
+Random Forest Model Specification (regression)
+
+Main Arguments:
+  mtry = tune()
+  trees = 500
+  min_n = tune()
+
+Engine-Specific Arguments:
+  importance = impurity
+
+Computational engine: ranger 
+
+Rows: 5
+Columns: 2
+$ mtry  <int> …
+$ min_n <int> …
+══ Workflow ════════════════════════════════════════════════════════════════════════
+Preprocessor: Recipe
+Model: rand_forest()
+
+── Preprocessor ────────────────────────────────────────────────────────────────────
+5 Recipe Steps
+
+• step_zv()
+• step_corr()
+• step_YeoJohnson()
+• step_normalize()
+• step_dummy()
+
+── Model ───────────────────────────────────────────────────────────────────────────
+Random Forest Model Specification (regression)
+
+Main Arguments:
+  mtry = tune()
+  trees = 500
+  min_n = tune()
+
+Engine-Specific Arguments:
+  importance = impurity
+  num.threads = 6
+
+Computational engine: ranger 
+
+    user   system  elapsed 
+46286.90   530.14  9833.84 
+Rows: 5
+Columns: 2
+$ mtry  <int> …
+$ min_n <int> …
+══ Workflow ════════════════════════════════════════════════════════════════════
+Preprocessor: Recipe
+Model: rand_forest()
+
+── Preprocessor ────────────────────────────────────────────────────────────────
+5 Recipe Steps
+
+• step_zv()
+• step_corr()
+• step_YeoJohnson()
+• step_normalize()
+• step_dummy()
+
+── Model ───────────────────────────────────────────────────────────────────────
+Random Forest Model Specification (regression)
+
+Main Arguments:
+  mtry = tune()
+  trees = 500
+  min_n = tune()
+
+Engine-Specific Arguments:
+  importance = impurity
+  num.threads = 6
+
+Computational engine: ranger 
+
+    user   system  elapsed 
+47677.00   978.84 11227.94 

@@ -1,0 +1,510 @@
+install.packages("lme4")
+install.packages("future")
+install.packages("ranger")
+install.packages("tidyverse")
+install.packages("janitor")
+install.packages("skimr")
+install.packages("GGally")
+install.packages("kableExtra")
+install.packages("ggcorrplot")
+install.packages("flextable")
+install.packages("yardstick")
+install.packages("tidymodels")
+install.packages("stacks")
+install.packages("doParallel")
+install.packages("bonsai")
+install.packages("finetune")
+install.packages("themis")
+install.packages("rlang")
+install.packages("vip")
+install.packages("mltools")
+install.packages("doFuture")
+install.packages("here")
+
+library(doFuture)
+library(future)
+library(lme4)
+library("tidyverse")
+library("janitor")
+library("skimr")
+library("scales")
+library("GGally")
+library("kableExtra")
+library("ggcorrplot")
+library("flextable")
+library(yardstick)
+library(tibble)
+library(here)
+library("tidymodels")
+library("stacks")
+library("doParallel")
+library("bonsai")
+library("finetune")
+library("themis")
+library("rlang")
+library("vip")
+library("mltools")
+
+# Set global theme
+theme_set(theme_light())
+
+# Import data
+cal_train <- read_csv(here("data", "calorie_train.csv")) %>%
+  clean_names()
+
+cal_test <- read_csv(here("data","calorie_test.csv")) %>%
+  clean_names()
+
+# Import data for kaggle submission
+cal_submit <- read_csv(here("data", "calorie_submission.csv"))
+
+# Structure
+str(cal_train)
+str(cal_test)
+
+# EDA
+train_diag <- cal_train %>%
+  skim() %>%
+  kbl(format = "html",
+      caption = "Variables Dignosis | Train",
+      digits = 2) %>%
+  kable_classic(full_width = F)
+train_diag
+
+test_diag <- cal_test %>%
+  skim() %>%
+  kbl(format = "html",
+      caption = "Variables Dignosis | Test",
+      digits = 2) %>%
+  kable_classic(full_width = F)
+
+# Convert character variables to factor and remove id column
+cal_train <- cal_train %>%
+  mutate(across(where(is.character), as.factor)) %>%
+  select(-id)
+
+cal_test <- cal_test %>%
+  mutate(across(where(is.character), as.factor)) %>%
+  select(-id)
+
+str(cal_train)
+str(cal_test)
+
+# Target variable distribution
+cal_train %>%
+  select(calories) %>%
+  ggplot(aes(x = calories)) +
+  geom_histogram(color = "black", fill = "gray") +
+  geom_vline(aes(xintercept = mean(calories)), color = "red") +
+  labs(title = "Target variable distribution | calories",
+       x = "Calories",
+       y = "Count")
+
+# Target variable by sex
+cal_train %>%
+  select(sex, calories) %>%
+  ggplot(aes(x = sex, y = calories, fill = sex)) +
+  geom_boxplot(color = "gray50",
+               outlier.colour = "darkred",
+               show.legend = FALSE) +
+  labs(title = "Target variable distribution by sex",
+       x = "Sex",
+       y = "Calories") +
+  coord_flip()
+
+# Age vs Calories with facet_wrap by Sex
+cal_train %>%
+  select(sex, calories, age) %>%
+  ggplot(aes(x = calories, y = age, fill = sex)) +
+  geom_boxplot(color = "gray50", outlier.color = "darkred") +
+  labs(title = "Age vs Target Variable by Sex",
+       x = "Calories",
+       y = "Age",
+       fill = "Sex") +
+  facet_wrap(~ sex) # Facet by Sex
+
+# Proportion of sex
+cal_train %>%
+  count(sex, name = "counts", sort = T) %>%
+  mutate(prop = round(counts / sum(counts) * 100, 2),
+         label = str_c(sex, " ", prop)) %>%
+  ggplot(aes(sex, counts)) +
+  geom_col(aes(fill = sex))+
+  geom_text(
+    aes(label = str_c(prop, "%"), group = sex),
+    size = 4,
+    hjust = 1.2)+
+  labs(title = "Proportion of Sex") +
+  coord_flip()
+
+# Age distribution by SEX
+cal_train %>%
+  ggplot(aes(age, fill = sex)) +
+  geom_histogram(color = "white") +
+  facet_wrap(vars(sex), scale = "free") +
+  labs(title = "Age distribution by Sex",
+       x = "Age",
+       y = "Counts",
+       fill = "Sex")
+
+# Heart rate vs weight by Sex
+cal_train %>%
+  ggplot(aes(x = heart_rate, y = weight, color = sex)) +
+  geom_point() +
+  geom_smooth(aes(color = sex)) +
+  labs(
+    title = "Heart rate VS Weight by Sex",
+    x = "Heart rate",
+    y = "Weight"
+  )
+
+# Height VS Weight by Sex
+cal_train %>%
+  ggplot(aes(x = height, y = weight, color = sex)) +
+  geom_point() +
+  geom_smooth(aes(color = sex)) +
+  labs(
+    title = "Height VS Weight by Sex",
+    x = "Height",
+    y = "Weight"
+  )
+
+# Duration Distribution by Sex
+cal_train %>%
+  select(duration, sex) %>%
+  ggplot(aes(x = duration, fill = sex)) +
+  geom_histogram(color = "white", position = position_dodge()) +
+  geom_vline(aes(xintercept = mean(duration)), color = "black")+
+  labs(title = "Duration Distribution",
+       x = "Duration",
+       y = "Counts")
+
+# Duration Distribution vs Weight
+cal_train %>%
+  select(duration, weight) %>%
+  ggplot(aes(x = as.factor(duration), y = weight)) +
+  geom_boxplot(aes(fill = duration), alpha = 0.6) +
+  labs(title = "Duration Distribution vs Weight",
+       x = "Duration",
+       y = "weight")
+
+# Correlation Matrix (Train Dataset)
+cal_train %>%
+  select(-c(calories, sex)) %>%
+  cor() %>%
+  ggcorrplot(
+    outline.col = "white",
+    ggtheme = ggplot2::theme_minimal,
+    colors = c("darkblue", "white", "red"),
+    tl.cex = 7,
+    lab = TRUE,
+    lab_size = 3,
+    lab_col = "black",
+    show.legend = TRUE
+  ) +
+  theme(
+    plot.background = element_rect(fill = "#edf2f7", color = "white"),
+    plot.title.position = "plot",
+    plot.title = element_text(hjust = 0.5, size = 10)
+  ) +
+  labs(title = "Correlation Matrix (Train Dataset)")
+
+# Correlation matrix (Train Dataset)
+cal_test %>%
+  select(-sex) %>%
+  cor() %>%
+  ggcorrplot(
+    outline.col = "white",
+    ggtheme = ggplot2::theme_minimal,
+    colors = c("darkblue", "white", "red"),
+    tl.cex = 7,
+    lab = TRUE,
+    lab_size = 3,
+    lab_col = "black",
+    show.legend = TRUE
+  ) +
+  theme(
+    plot.background = element_rect(fill = "#edf2f7", color = "white"),
+    plot.title.position = "plot",
+    plot.title = element_text(hjust = 0.5, size = 10)
+  ) +
+  labs(title = "Correlation Matrix (Test Dataset)")
+
+
+# Pair plot by sex
+sex_color <- c(
+  "male" =  "#2986cc",
+  "female" = "#c90076"
+)
+
+
+cal_train %>%
+  group_by(calories) %>%
+  slice_sample(prop = 0.05) %>%
+  ungroup() %>%
+  ggpairs(
+    aes(color = sex),
+    lower = list(continuous = wrap(
+      "smooth",
+      alpha = 0.2,
+      size = 0.5,
+      color = "#FBDFB0"
+    )),
+    diag = list(continuous = "barDiag"),
+    upper = list(continuous = wrap("cor", size = 3))
+  ) +
+  scale_color_manual(values = sex_color) +
+  scale_fill_manual(values = sex_color) +
+  theme(
+    axis.text = element_text(size = 8),
+    panel.background = element_rect(fill = "white"),
+    strip.background = element_rect(fill = "white"),
+    strip.background.x = element_rect(colour = "black"),
+    strip.background.y = element_rect(colour = "black"),
+    strip.text = element_text(
+      color = "black",
+      face = "bold",
+      size = 8
+    )
+  ) +
+  labs(caption = "Data Source: Kaggle | Predict Calorie Expenditure",
+       x = NULL,
+       y = NULL)
+
+## Feature Engineering
+# Create pre-processing function
+cal_fun <- function(df){
+  df <- df %>%
+    mutate(
+      bmi = weight / ((height / 100)^2),
+      heart_rate_reserve = heart_rate / (220 - age),
+      weight_duration = weight * duration,
+      age_squared = age^2,
+      temp_diff = body_temp - 37,
+      heart_dura = duration * heart_rate,
+      heart_rate_vs_duration = heart_rate / duration
+    )
+  
+  return(df)
+}
+
+# Apply the function and apply log transformation to target variable because its
+# distribution is skewed
+cal_train1 <- cal_fun(cal_train) %>%
+  mutate(calories = log1p(calories))%>%
+  as.data.frame() # To correct any errors caused by pre-processing
+
+cal_test1 <- cal_fun(cal_test) %>%
+  as.data.frame()
+
+# Put rmse metric set
+custom_metrics <- metric_set(yardstick::rmse)
+
+# Reshuffle the train set
+set.seed(3)
+
+train_cal <- cal_train1 %>%
+  slice_sample(prop = 1)
+
+# Data splitting
+cal_split <- initial_split(train_cal, prop = 0.7,
+                           strata = "calories")
+
+train_split <- training(cal_split)
+test_split <- testing(cal_split)
+
+str(train_split)
+str(test_split)
+nrow(train_split)
+nrow(test_split)    
+
+# Generate 5 folds of cross validation for train_split
+set.seed(121)
+
+cal_folds <- vfold_cv(data = train_split, v = 5, strata = "calories") 
+
+# Check the number of of predictors in each fold and check levels of factors for each fold
+# This will help you when tuning mtry hyperparameter
+map(cal_folds$splits, ~ ncol(analysis(.x)))  
+
+map(cal_folds$splits, ~ map(analysis(.x), ~ if (is.factor(.)) levels(.)))
+
+# Build a recipe
+cal_recipe <- recipe(calories ~ ., data = train_split) %>%
+  step_zv(all_predictors()) %>%
+  step_corr(all_numeric_predictors(), threshold = 0.99) %>%
+  step_YeoJohnson(all_numeric_predictors()) %>%
+  step_normalize(all_numeric_predictors ()) %>%
+  step_dummy(all_nominal_predictors(), one_hot = TRUE)
+cal_recipe
+
+# Train recipe on train_split
+recipe_train <- cal_recipe %>%
+  prep(training = train_split)
+
+# To get a dataframe of train_split that reflects the pre-processing steps in the
+# recipe, we use bake()
+bake_cal <- recipe_train %>%
+  bake(new_data = NULL)# bake_cal will have more number of variables because of step_dummy in the recipe
+# and bake_cal will be used to finalize mtry parameter
+str(bake_cal)
+
+
+# Apply the recipe on the original test data
+bake_cal_test <- recipe_train %>%
+  bake(new_data = cal_test1) 
+
+
+# Start logging to a file
+sink("tune_log.txt", append = TRUE)
+
+
+# Define random forest with fewer trees
+rf_spec_cal <- rand_forest(mtry = tune(), trees = 500, min_n = tune()) %>%
+  set_engine("ranger", importance = "impurity", 
+             num.threads = 6) %>%
+  set_mode("regression")
+
+# Finalize parameter set
+param_set <- rf_spec_cal %>%
+  extract_parameter_set_dials() %>%
+  finalize(bake_cal)
+
+# Use grid_space_filling (replacing deprecated grid_latin_hypercube)
+grid_tune <- param_set %>%
+  grid_space_filling(type = "latin_hypercube", size = 5)
+
+# See results
+grid_tune %>%
+  glimpse(width = 5)
+
+# Workflow
+cal_workflow <- workflow() %>%
+  add_recipe(cal_recipe) %>%
+  add_model(rf_spec_cal)
+cal_workflow
+
+
+# Tune with parallel_over for more speedup
+race_cntl <- control_race(save_pred = TRUE,
+                          save_workflow = FALSE,
+                          verbose = TRUE)
+
+
+plan(sequential)
+
+
+# Tune (time it as before)
+system.time({
+  cal_tune_race <- cal_workflow %>%
+    tune_race_anova(
+      resamples = cal_folds,
+      grid = grid_tune,
+      control = race_cntl,
+      metrics = custom_metrics
+    )
+})
+
+# Stop logging
+sink()
+
+# Save the tune object
+saveRDS(cal_tune_race, "cal_tune_race_result.rds")
+
+# Show all metrics in the tuning, including those removed by racing 
+cal_tune_race$.metrics
+
+# show metrics for parameter combinations that were fully evaluated (i.e., those that completed all resamples, or "finished the race")
+collect_metrics(cal_tune_race, summarize = FALSE)
+
+# View tuning results of the racing
+plot_race(cal_tune_race)
+
+#Interpretation: The lowest line at stage 5 represents the superior performer based on the cumulative metrics.
+
+
+# Select model with the best metric or model performance
+cal_best_id <- cal_tune_race %>%
+  select_best(metric = "rmse")
+cal_best_id
+
+# Extract the best workflow and fit using last_fit
+best_cal_race <- cal_workflow %>%
+  finalize_workflow(cal_best_id) %>%
+  last_fit(cal_split, metrics = custom_metrics)
+
+# Extract the fitted model
+cal_model <- best_cal_race$.workflow[[1]]
+
+
+# Save the model
+saveRDS(best_cal_race, "best_cal_model.rds")
+
+# Variable importance. Extract the fitted parsnip model from the workflow
+cal_fit <- extract_fit_parsnip(cal_model)$fit
+
+cal_fit$variable.importance
+
+# Plot with vip
+vip(cal_fit)
+
+
+# Get predictions from last_fit (on test_split)
+test_preds <- collect_predictions(best_cal_race) %>%
+  # log-scale Residuals (Recall we transformed target variable with log1p()) 
+  mutate(
+    .resid_log = calories - .pred,
+    
+    # Back-transform to original scale
+    .pred_raw = expm1(.pred),               # Inverse of log1p
+    calories_raw = expm1(calories),         # Original calories
+    .resid_raw = calories_raw - .pred_raw   # Original-scale residuals
+  )
+
+
+# Plot: Residuals vs. Predicted (log scale - for model checks)
+ggplot(test_preds, aes(x = .pred, y = .resid_log)) +
+  geom_point(alpha = 0.5, color = "blue") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residuals vs. Predicted (Log Scale)",
+       x = "Predicted Calories (log1p)",
+       y = "Residuals (log1p)") +
+  theme_minimal()
+# Interpretation: When residuals fan out or show larger scatter at one end, that is evidence of unequal error variance (heteroscedasticity) rather than constant variance (homoscedasticity). The plot's “first end” (lower predicted calories on the log scale) has noticeably larger spread, meaning the model’s errors are larger and less predictable for those observations.
+
+# Plot: Residuals vs. Predicted (original scale - for interpretation) for real-world interpretability
+ggplot(test_preds, aes(x = .pred_raw, y = .resid_raw)) +
+  geom_point(alpha = 0.5, color = "blue") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residuals vs. Predicted (Original Scale)",
+       x = "Predicted Calories (raw)",
+       y = "Residuals (raw)") +
+  theme_minimal()
+# Interpretation: The spread of residuals is larger at the low end of predicted calories, so small predicted values have much larger and more variable errors. That pattern means predictions for low-calorie observations are less reliable.
+
+# Collect metrics
+collect_metrics(best_cal_race)
+
+
+## Final fit on full data and prediction for Submission
+# Extract the best hyperparameters
+best_params <- cal_tune_race %>%
+  select_best(metric = "rmse")
+
+#  Finalize the workflow with these parameters
+final_workflow <- cal_workflow %>%
+  finalize_workflow(best_params)
+
+#  REFIT on the ENTIRE training dataset (not just train_split)
+final_fit_full <- fit(final_workflow, data = cal_train1)
+
+#  Predict on the test set
+cal_pred <- predict(final_fit_full, new_data = cal_test1)
+
+# Prepare submission
+cal_sub<- cal_submit %>%
+  mutate(Calories = expm1(cal_pred$.pred)) # Inverse log transformation
+
+write_csv(cal_sub, "submission_refit_full_data.csv")
+
+
