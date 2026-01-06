@@ -44,6 +44,7 @@ library("themis")
 library("rlang")
 library("vip")
 library("mltools")
+library(usethis)
 
 # Set global theme
 theme_set(theme_light())
