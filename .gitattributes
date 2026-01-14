@@ -1,3 +1,11 @@
+\# filter=lfs diff=lfs merge=lfs -text
+For filter=lfs diff=lfs merge=lfs -text
+models filter=lfs diff=lfs merge=lfs -text
+like filter=lfs diff=lfs merge=lfs -text
+best_cal_model.rds filter=lfs diff=lfs merge=lfs -text
 *.rds filter=lfs diff=lfs merge=lfs -text
 *.csv filter=lfs diff=lfs merge=lfs -text
+datasets filter=lfs diff=lfs merge=lfs -text
+cal_1.csv, filter=lfs diff=lfs merge=lfs -text
+data/calorie_train.csv filter=lfs diff=lfs merge=lfs -text
 data/*.csv filter=lfs diff=lfs merge=lfs -text
